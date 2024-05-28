@@ -8,7 +8,7 @@
   </information>
   <resources>
     <j2se version="1.6+" href="http://java.sun.com/products/autodl/j2se"/>
-    <jar href="PrelucrareaImaginilorLaborator.jar" size="29849" download="eager" />
+    <jar href="PrelucrareaImaginilorLaborator.jar" size="36186" download="eager" />
     <jar href="lib\jfreechart-1.5.4.jar" size="1622539" download="eager" />
     <jar href="lib\opencv-3416.jar" size="646795" download="eager" />
   </resources>

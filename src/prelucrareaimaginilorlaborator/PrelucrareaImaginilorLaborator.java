@@ -13,6 +13,7 @@ import java.awt.image.ColorConvertOp;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -150,7 +151,9 @@ public class PrelucrareaImaginilorLaborator extends Application {
         MenuItem menuItemEdgeDetected = new MenuItem("Filtru Detectare Contur");
         Menu menuCompress = new Menu("Compresie");
         MenuItem menuItemLZWCompress = new MenuItem("Compresie LZW");
+        MenuItem menuItemHuffmanCompress = new MenuItem("Compresie Huffman");
         MenuItem menuItemLZWDeCompress = new MenuItem("Decompresie LZW");
+        MenuItem menuItemHuffmanDeCompress = new MenuItem("Decompresie Huffman");
         menuItem_RGB.setDisable(true);
         menuItem_Gray.setDisable(true);
         menuItem_YUV.setDisable(true);
@@ -167,12 +170,13 @@ public class PrelucrareaImaginilorLaborator extends Application {
         menuItemDilate.setDisable(true);
         menuItemEdgeDetected.setDisable(true);
         menuItemLZWCompress.setDisable(true);
+        menuItemHuffmanCompress.setDisable(true);
         menuChange.getItems().addAll(menuItem_RGB, menuItem_Gray, menuItem_YUV, menuItem_YCbCr,
                 menuItem_HSV, menuItemHistogram, menuItemEticheta);
         menuBar.getMenus().addAll(menuFile, menuChange, menuFilter, menuCompress);
         menuFilter.getItems().addAll(menuItemMediation, menuItemEnhancer,menuItemMin,menuItemMedian, menuItemMax, menuItemLaplacian,
                 menuItemDilate, menuItemEdgeDetected);
-        menuCompress.getItems().addAll(menuItemLZWCompress, menuItemLZWDeCompress);
+        menuCompress.getItems().addAll(menuItemLZWCompress, menuItemLZWDeCompress, menuItemHuffmanCompress, menuItemHuffmanDeCompress);
         VBox vbox = new VBox(menuBar, labelR, labelG, labelB, valoarePixel);
         vbox.setAlignment(Pos.TOP_CENTER);
         vbox.setSpacing(10);
@@ -204,6 +208,7 @@ public class PrelucrareaImaginilorLaborator extends Application {
                     menuItemDilate.setDisable(false);
                     menuItemEdgeDetected.setDisable(false);
                     menuItemLZWCompress.setDisable(false);
+                    menuItemHuffmanCompress.setDisable(false);
                     BufferedImage imageN = new BufferedImage(bufferedImag.getWidth(), bufferedImag.getHeight(), BufferedImage.TYPE_INT_ARGB);
                     for (int y = 0; y < bufferedImag.getHeight(); y++) {
                         for (int x = 0; x < bufferedImag.getWidth(); x++) {
@@ -1033,6 +1038,7 @@ public class PrelucrareaImaginilorLaborator extends Application {
         menuItemLZWDeCompress.setOnAction((ActionEvent event) -> {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Selecteaza fisierul cu extensia .lzw");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("LZW Compressed Image", "*.lzw"));
             File file = fileChooser.showOpenDialog(mainStage);
             if (file != null) {
                 try {
@@ -1067,6 +1073,85 @@ public class PrelucrareaImaginilorLaborator extends Application {
                     sp.setContent(vbOpen);
                     menuBar.getMenus().get(1).getItems().get(0).setDisable(false);
                 } catch (IOException ex) {
+                    Logger.getLogger(PrelucrareaImaginilorLaborator.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+           
+        });
+        menuItemHuffmanCompress.setOnAction((ActionEvent event) -> {
+            ScrollPane spLZW = new ScrollPane(); 
+            VBox vbZLW = new VBox();
+            Button saveFile = new Button();
+            saveFile.setText("Salvati imaginea");
+            Label CompressZLW = new Label();
+            Label error = new Label();
+            String HuffmanCompress;
+            try {
+                HuffmanCompress = new HuffmanCompression().compress(bufferedImag);
+                CompressZLW.setText("Compresie Huffman: " + HuffmanCompress);
+                saveFile.setOnAction((ActionEvent ev) -> {
+                    FileChooser fileChooserSave = new FileChooser();
+                    fileChooserSave.getExtensionFilters().add(new FileChooser.ExtensionFilter("Huffman Compressed Image", "*.huff"));
+                    File file = fileChooserSave.showSaveDialog(mainStage);
+                    if (file != null) {
+                        try (FileOutputStream fos = new FileOutputStream(file)) {
+                            fos.write(HuffmanCompress.getBytes());
+                            error.setText("Salvat cu succes!");
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                            error.setText("Eroare la salvarea imaginii!");
+                        }
+                    }
+                });
+            } catch (IOException ex) {
+                Logger.getLogger(PrelucrareaImaginilorLaborator.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            vbZLW.getChildren().addAll(CompressZLW, saveFile, error);
+            spLZW.setContent(vbZLW);
+
+            Stage ZLWStage = new Stage();
+            Scene sceneZLW = new Scene(new HBox(), 900, 500);
+            ((HBox)sceneZLW.getRoot()).getChildren().addAll(spLZW);
+            ZLWStage.setTitle(name.getText()); // Utilizarea etichetei pentru titlu
+            ZLWStage.setScene(sceneZLW);
+            ZLWStage.show(); 
+     });
+        menuItemHuffmanDeCompress.setOnAction((ActionEvent event) -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Selecteaza fisierul cu extensia .huff");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Huffman Compressed Image", "*.huff"));
+            File file = fileChooser.showOpenDialog(mainStage);
+            if (file != null) {
+                try {
+                    VBox vbOpen = new VBox();
+                    BufferedImage bufferedImage = new HuffmanCompression().decompress(file.getAbsolutePath());
+                    BufferedImage imageN = new BufferedImage(bufferedImage.getWidth(), bufferedImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+                    for (int y = 0; y < bufferedImage.getHeight(); y++) {
+                        for (int x = 0; x < bufferedImage.getWidth(); x++) {
+                           //Retrieving contents of a pixel
+                            int pixel = bufferedImage.getRGB(x, y);
+                            Color color = new Color(pixel, true);
+                           //Retrieving the R G B values
+                           int alpha = color.getAlpha();
+                           int red = color.getRed();
+                           int green = color.getGreen();
+                           int blue = color.getBlue();
+                           Color myWhite = new Color(red, green, blue, alpha);
+                           imageN.setRGB(x, y, myWhite.getRGB());
+                        }
+                    }
+                    Image image = SwingFXUtils.toFXImage(imageN, null);
+                    vbOpen.getChildren().addAll(name,imageView);
+                    imageView.setFitHeight(400);
+                    imageView.setPreserveRatio(true);
+                    imageView.setImage(image);
+                    imageView.setSmooth(true);
+                    imageView.setCache(true);
+                    sp.setContent(vbOpen);
+                    menuBar.getMenus().get(1).getItems().get(0).setDisable(false);
+                } catch (IOException ex) {
+                    Logger.getLogger(PrelucrareaImaginilorLaborator.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (ClassNotFoundException ex) {
                     Logger.getLogger(PrelucrareaImaginilorLaborator.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
